@@ -1,0 +1,8 @@
+{% extends 'base.html' %}{% block heading %}Model Evaluation{% endblock %}{% block body %}
+<div class="disclaimer mb-3">Metrics are measured on a 25% hold-out split. When the data source says <b>SYNTHETIC</b>, these numbers only show that the pipeline works &mdash; they are <b>not</b> evidence of clinical accuracy. To use real data, place CSVs in <code>database/datasets/</code> and retrain.</div>
+{% for d, m in metrics.items() %}<div class="card p-3 mb-3"><h5>{{ specs[d].title if d in specs else d }} <span class="badge bg-primary">deployed: {{ m.best }}</span></h5>
+<div class="small muted mb-2">Version {{ m.version }} &middot; {{ m.n_samples }} rows &middot; positive rate {{ m.prevalence }} &middot; {{ m.data_source }}</div>
+<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Algorithm</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>ROC-AUC</th><th>Confusion matrix<br><span class="muted small">rows=actual (0,1), cols=predicted</span></th></tr></thead><tbody>
+{% for a, r in m.algorithms.items() %}<tr class="{{ 'table-primary' if a == m.best }}"><td>{{ a }}</td><td>{{ r.accuracy }}</td><td>{{ r.precision }}</td><td>{{ r.recall }}</td><td>{{ r.f1 }}</td><td>{{ r.roc_auc }}</td>
+<td><table class="table table-bordered table-sm mb-0 text-center" style="width:130px"><tr><td>TN {{ r.confusion_matrix[0][0] }}</td><td>FP {{ r.confusion_matrix[0][1] }}</td></tr><tr><td>FN {{ r.confusion_matrix[1][0] }}</td><td>TP {{ r.confusion_matrix[1][1] }}</td></tr></table></td></tr>{% endfor %}</tbody></table></div></div>
+{% else %}<div class="card p-4">No trained models found. Run <code>python ml_models\train_all.py</code>.</div>{% endfor %}{% endblock %}

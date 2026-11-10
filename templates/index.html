@@ -1,0 +1,4 @@
+{% extends 'base.html' %}{% block body %}<div class="text-center py-5"><h1 class="display-5 text-primary">AI-Powered Smart Healthcare</h1>
+<p class="lead">Risk insights, doctor appointments, reports and reminders in one place.</p>
+<a class="btn btn-primary btn-lg me-2" href="{{ url_for('auth.login') }}">Login</a><a class="btn btn-outline-primary btn-lg" href="{{ url_for('auth.register') }}">Register</a>
+<p class="text-muted mt-4 small">Predictions are experimental and not a medical diagnosis.</p></div>{% endblock %}

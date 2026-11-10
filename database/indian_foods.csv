@@ -1,0 +1,95 @@
+id,name,role,diet,serving,kcal,protein,carbs,fat,fiber,allergens,flags,meals
+1,Idli,bmain,vegan,2 pieces,116,4,24,0.4,1,,,breakfast
+2,Plain dosa,bmain,vegan,1 medium,133,3,24,2.5,1,,,breakfast
+3,Masala dosa,bmain,vegan,1 medium,210,4,32,7,2,,,breakfast
+4,Vegetable upma,bmain,vegan,1 cup (200 g),190,5,30,6,3,gluten,,breakfast
+5,Vegetable poha,bmain,vegan,1 cup (150 g),180,4,32,4,2,peanut,,breakfast
+6,Besan chilla,bmain,vegan,2 pieces,200,11,24,7,4,,,breakfast
+7,Moong dal chilla,bmain,vegan,2 pieces,180,12,22,5,4,,,breakfast
+8,Vegetable oats porridge,bmain,vegan,1 bowl (200 g),150,6,24,3,4,gluten,,breakfast
+9,Daliya (broken wheat) porridge,bmain,vegan,1 bowl (200 g),160,5,31,2,5,gluten,,breakfast
+10,Aloo paratha,bmain,veg,1 medium,260,6,36,10,3,gluten;dairy,,breakfast
+11,Plain paratha,bmain,veg,1 medium,200,5,28,8,2,gluten;dairy,,breakfast
+12,Egg bhurji,bmain,egg,2 eggs,190,13,3,14,0.3,egg,,breakfast
+13,Boiled eggs,bmain,egg,2 eggs,155,13,1,11,0,egg,,breakfast
+14,Vegetable sandwich (whole wheat),bmain,veg,2 slices,180,7,30,4,4,gluten;dairy,,breakfast
+15,Sprouts salad,bmain,vegan,1 bowl (150 g),120,9,20,1,6,,,breakfast;snack
+16,Ragi dosa,bmain,vegan,1 medium,120,3,24,1.5,3,,,breakfast
+17,Sabudana khichdi,bmain,vegan,1 cup (150 g),260,3,45,8,1,peanut,highgi,breakfast
+18,Medu vada,bmain,vegan,2 pieces,280,8,30,14,3,,fried,breakfast
+19,Sambar,legume,vegan,1 katori (150 g),90,4,13,2,3,,,breakfast;lunch;dinner
+20,Coconut chutney,side,vegan,2 tbsp,45,1,2,4,1,,,breakfast
+21,Roti (wheat),staple,vegan,1 medium,100,3,18,2,2.5,gluten,,lunch;dinner
+22,Phulka (no oil),staple,vegan,1 medium,70,2.5,15,0.4,2,gluten,,lunch;dinner
+23,Brown rice (cooked),staple,vegan,1 cup (150 g),170,4,36,1.4,2,,,lunch;dinner
+24,White rice (cooked),staple,vegan,1 cup (150 g),205,4,45,0.4,0.6,,highgi,lunch;dinner
+25,Jowar roti,staple,vegan,1 medium,100,3,21,0.7,3,,,lunch;dinner
+26,Bajra roti,staple,vegan,1 medium,120,3.5,23,2,3,,,lunch;dinner
+27,Ragi roti,staple,vegan,1 medium,100,2.5,21,0.6,3,,,lunch;dinner
+28,Missi roti,staple,veg,1 medium,130,5,20,3.5,3,gluten,,lunch;dinner
+29,Vegetable pulao,staple,vegan,1 cup (200 g),250,5,40,8,3,,,lunch
+30,Jeera rice,staple,vegan,1 cup (150 g),210,4,38,4,1,,,lunch
+31,Toor dal tadka,legume,vegan,1 katori (150 g),130,7,18,3,4,,,lunch;dinner
+32,Moong dal,legume,vegan,1 katori (150 g),110,8,16,1.5,4,,,lunch;dinner
+33,Masoor dal,legume,vegan,1 katori (150 g),120,8,17,2,4,,,lunch;dinner
+34,Chana dal,legume,vegan,1 katori (150 g),150,9,22,3,6,,,lunch;dinner
+35,Rajma masala,legume,vegan,1 katori (150 g),160,8,23,4,6,,,lunch;dinner
+36,Chole (chickpea curry),legume,vegan,1 katori (150 g),180,9,25,5,7,,,lunch;dinner
+37,Dal makhani,legume,veg,1 katori (150 g),230,9,22,12,5,dairy,highsatfat,lunch
+38,Lobia (black-eyed pea) curry,legume,vegan,1 katori (150 g),140,8,20,3,5,,,lunch;dinner
+39,Kadhi,legume,veg,1 katori (150 g),140,5,12,8,1,dairy,,lunch
+40,Mixed vegetable sabzi,veg,vegan,1 katori (120 g),90,3,10,4,3,,,lunch;dinner
+41,Bhindi masala,veg,vegan,1 katori (100 g),85,2,9,5,3,,,lunch;dinner
+42,Aloo gobi,veg,vegan,1 katori (120 g),110,3,14,5,3,,,lunch;dinner
+43,Lauki sabzi,veg,vegan,1 katori (120 g),60,1.5,7,3,2,,,lunch;dinner
+44,Baingan bharta,veg,vegan,1 katori (120 g),90,2,8,6,3,,,lunch;dinner
+45,Cabbage sabzi,veg,vegan,1 katori (100 g),70,2,8,3,3,,,lunch;dinner
+46,Palak sabzi (dry),veg,vegan,1 katori (100 g),70,3,6,4,3,,,lunch;dinner
+47,Mushroom matar,veg,vegan,1 katori (120 g),100,4,9,5,3,,,lunch;dinner
+48,Cucumber tomato salad,veg,vegan,1 bowl (100 g),35,1,7,0.3,2,,,lunch;dinner
+49,Paneer bhurji,protein,veg,1 katori (100 g),260,16,6,19,1,dairy,highsatfat,lunch;dinner
+50,Grilled paneer,protein,veg,75 g,200,13,3,15,0,dairy,,lunch;dinner
+51,Palak paneer,protein,veg,1 katori (150 g),210,11,8,15,3,dairy,,lunch;dinner
+52,Paneer butter masala,protein,veg,1 katori (150 g),300,11,10,24,2,dairy,highsatfat,lunch;dinner
+53,Soya chunks curry,protein,vegan,1 katori (150 g),150,18,10,4,5,soy,,lunch;dinner
+54,Tofu bhurji,protein,vegan,100 g,120,12,3,7,1,soy,,lunch;dinner
+55,Chicken curry,protein,nonveg,1 katori (150 g),240,22,6,14,1,,,lunch;dinner
+56,Grilled chicken breast,protein,nonveg,100 g,165,31,0,3.6,0,,,lunch;dinner
+57,Tandoori chicken,protein,nonveg,2 pieces (120 g),220,28,3,10,0,,,lunch;dinner
+58,Fish curry,protein,nonveg,1 katori (150 g),200,20,5,11,1,fish,,lunch;dinner
+59,Grilled fish,protein,nonveg,100 g,140,22,0,5,0,fish,,lunch;dinner
+60,Egg curry,protein,egg,2 eggs with gravy,250,14,8,18,1,egg,,lunch;dinner
+61,Boiled egg,protein,egg,1 egg,78,6.3,0.6,5.3,0,egg,,lunch;dinner;snack
+62,Mutton curry,protein,nonveg,1 katori (150 g),300,22,5,22,1,,highsatfat,lunch;dinner
+63,Curd,dairy,veg,1 katori (100 g),60,3.5,4.7,3,0,dairy,,breakfast;lunch;dinner
+64,Buttermilk,dairy,veg,1 glass (200 ml),40,2,5,1,0,dairy,,breakfast;lunch;snack
+65,Toned milk,dairy,veg,1 glass (200 ml),120,6.5,9.5,6.5,0,dairy,,breakfast;snack
+66,Vegetable raita,dairy,veg,1 katori (100 g),75,3,6,4,1,dairy,,lunch;dinner
+67,Apple,fruit,vegan,1 medium (150 g),78,0.4,21,0.3,3.6,,,breakfast;snack
+68,Banana,fruit,vegan,1 medium (120 g),105,1.3,27,0.4,3,,,breakfast;snack
+69,Orange,fruit,vegan,1 medium (150 g),62,1.2,15,0.2,3,,,breakfast;snack
+70,Papaya,fruit,vegan,1 cup (150 g),60,0.7,15,0.2,2.5,,,breakfast;snack
+71,Guava,fruit,vegan,1 medium (100 g),68,2.6,14,1,5,,,breakfast;snack
+72,Pomegranate,fruit,vegan,1/2 cup (87 g),72,1.5,16,1,3.5,,,breakfast;snack
+73,Watermelon,fruit,vegan,1 cup (150 g),45,0.9,11,0.2,0.6,,,snack
+74,Mango,fruit,vegan,1 cup sliced (165 g),100,1.4,25,0.6,2.6,,highgi,snack
+75,Roasted chana,snack,vegan,30 g,110,6,17,2,5,,,snack
+76,Almonds,snack,vegan,10 pieces (12 g),70,2.5,2.5,6,1.5,nuts,,snack
+77,Walnuts,snack,vegan,4 halves (14 g),90,2,2,9,1,nuts,,snack
+78,Roasted peanuts,snack,vegan,30 g,170,7.5,5,14,2.5,peanut,,snack
+79,Roasted makhana,snack,vegan,1 cup (30 g),105,3,20,0.4,1,,,snack
+80,Sprouts chaat,snack,vegan,1 bowl (120 g),130,8,20,2,5,,,snack
+81,Fruit chaat,snack,vegan,1 bowl (150 g),100,1.5,24,0.5,3,,,snack
+82,Vegetable soup,snack,vegan,1 bowl (250 ml),60,2,10,1.5,2,,,snack;dinner
+83,Boiled corn (bhutta),snack,vegan,1 cup (140 g),130,4,29,1.5,3,,,snack
+84,Dhokla,snack,veg,2 pieces (80 g),120,5,20,2.5,1,dairy,,snack
+85,Murmura bhel,snack,vegan,1 bowl (50 g),110,3,22,1.5,1,peanut,highgi,snack
+86,Hummus with cucumber,snack,vegan,3 tbsp + veg,90,3,8,5,2,sesame,,snack
+87,Samosa,treat,veg,1 piece,260,4,24,17,2,gluten,fried;highsodium,snack
+88,Onion pakora,treat,vegan,5 pieces,250,6,22,15,3,,fried,snack
+89,Gulab jamun,treat,veg,1 piece,150,2,22,6,0,dairy;gluten,highgi,snack
+90,Jalebi,treat,veg,2 pieces (40 g),150,1,28,4,0,gluten,highgi;fried,snack
+91,Tea with milk and sugar,treat,veg,1 cup (150 ml),80,2,12,2.5,0,dairy,,snack;breakfast
+92,Papad (roasted),treat,vegan,1 piece,40,3,6,0.5,1,,highsodium,lunch;dinner
+93,Mango pickle (achar),treat,vegan,1 tbsp,30,0.2,2,2.5,0.5,mustard,highsodium,lunch;dinner
+94,Packaged namkeen,treat,veg,30 g,160,3,15,10,1,gluten,fried;highsodium,snack

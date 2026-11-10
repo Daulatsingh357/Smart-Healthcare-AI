@@ -1,0 +1,23 @@
+{% extends 'base.html' %}{% block heading %}<span data-i18n="t.reports">Medical Report Analyzer</span>{% endblock %}
+{% block body %}
+<a href="{{ url_for('report_analyzer.index') }}" class="small">&larr; All reports</a>
+<div class="d-flex flex-wrap gap-2 align-items-center my-2"><h4 class="mb-0" id="title">Report</h4><span class="badge bg-secondary" id="meta"></span>
+ <div class="ms-auto d-flex gap-2"><a class="btn btn-outline-primary btn-sm" id="pdf"><i class="bi bi-file-pdf"></i> <span data-i18n="b.pdf">Download PDF</span> (summary)</a><a class="btn btn-outline-secondary btn-sm" id="orig"><i class="bi bi-download"></i> Original file</a></div></div>
+<div class="card p-3 mb-3"><h6><span class="tag-ext">EXTRACTED</span> Values read from your report</h6><div class="small muted mb-2">Test names, values, units and reference ranges are copied from the document. Red rows are outside the range printed on <i>your</i> report.</div>
+<div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Test (as printed)</th><th>Value</th><th>Unit</th><th>Reference range (from report)</th><th>Status</th></tr></thead><tbody id="rows"></tbody></table></div>
+<div id="empty" class="muted small d-none">No known lab parameters were found. Make sure the file is a lab report with clear text (for scans: a straight, well-lit, high-resolution image).</div></div>
+<div class="card p-3 mb-3"><h6><span class="tag-ai">AI-GENERATED</span> Plain-language explanations <span class="muted small" id="lang"></span></h6>
+<div class="small muted mb-2" id="elabel"></div><div id="expl"></div></div>
+<div class="card p-3"><a class="small" data-bs-toggle="collapse" href="#raw">Show raw extracted text (for checking OCR quality)</a><pre id="raw" class="collapse small mt-2" style="white-space:pre-wrap;max-height:300px;overflow:auto"></pre></div>
+{% endblock %}{% block scripts %}<script>
+const RID={{ rid }};let R=null;
+function draw(){if(!R)return;const hi=App.lang()==='hi';
+ rows.innerHTML=R.values.map(v=>`<tr class="${v.status==='Low'||v.status==='High'?'row-abn':''}"><td>${App.esc(v.name)}${v.display&&v.display!==v.name?' <span class="muted small">('+App.esc(hi?v.display_hi:v.display)+')</span>':''}</td><td><b>${v.value}</b></td><td>${App.esc(v.unit||'-')}</td><td>${v.ref_text?App.esc(v.ref_text):'<span class="muted">not printed in report</span>'}</td>
+ <td><span class="status-${v.status.split(' ')[0]}">${v.status}</span>${v.status_source==='report-flag'?' <span class="muted small">(flag printed in report)</span>':''}</td></tr>`).join('');
+ empty.classList.toggle('d-none',R.values.length>0);
+ expl.innerHTML=R.values.map(v=>`<div class="py-1 border-bottom small"><b>${App.esc(hi?v.display_hi:v.display)}</b> <span class="status-${v.status.split(' ')[0]}">(${v.status})</span><br>${App.esc(hi?v.explanation_hi:v.explanation_en)}</div>`).join('')||'<span class="muted small">Nothing to explain.</span>';
+ lang.textContent=hi?'(हिंदी)':'(English)'}
+(async()=>{try{R=await App.api('/api/reports/'+RID);title.textContent=R.title;meta.textContent=`${R.report_date||''} · ${R.file_type.toUpperCase()} · ${R.method} · ${R.value_count} values`;
+ pdf.href=`/api/reports/${RID}/pdf`;orig.href=`/api/reports/${RID}/file`;elabel.textContent=R.explanation_label+'. Use the language button (top right) to switch English/हिंदी.';raw.textContent=R.ocr_text||'(empty)';draw()}catch(e){App.fail(e)}})();
+document.addEventListener('langchange',draw);
+</script>{% endblock %}

@@ -1,0 +1,39 @@
+<!doctype html><html lang="en" data-bs-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="csrf-token" content="{{ csrf_token() }}"><title>{% block title %}SmartCare AI{% endblock %}</title>
+<script>document.documentElement.setAttribute('data-bs-theme',localStorage.getItem('theme')||'light')</script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet"></head><body>
+{% set ep = request.endpoint or '' %}
+{% if current_user.is_authenticated %}<div class="layout">
+<nav class="sidebar"><div class="brand"><i class="bi bi-heart-pulse-fill"></i>SmartCare AI</div>
+<div class="who"><i class="bi bi-person-circle"></i> {{ current_user.name }} &middot; {{ current_user.role }}</div>
+<a class="nav-i {{ 'active' if ep=='patient.dashboard' }}" href="{{ url_for('patient.dashboard') }}"><i class="bi bi-grid-1x2"></i><span data-i18n="nav.dashboard">Dashboard</span></a>
+{% if current_user.role == 'patient' %}
+<a class="nav-i {{ 'active' if ep.startswith('prediction') }}" href="{{ url_for('prediction.page') }}"><i class="bi bi-activity"></i><span data-i18n="nav.predict">Risk Prediction</span></a>
+<a class="nav-i {{ 'active' if ep.startswith('report_analyzer') }}" href="{{ url_for('report_analyzer.index') }}"><i class="bi bi-file-earmark-medical"></i><span data-i18n="nav.reports">Report Analyzer</span></a>
+<a class="nav-i {{ 'active' if ep.startswith('chatbot') }}" href="{{ url_for('chatbot.page') }}"><i class="bi bi-chat-heart"></i><span data-i18n="nav.chat">AI Health Assistant</span></a>
+<a class="nav-i {{ 'active' if ep.startswith('diet_planner') }}" href="{{ url_for('diet_planner.page') }}"><i class="bi bi-egg-fried"></i><span data-i18n="nav.diet">Diet &amp; Nutrition</span></a>
+<a class="nav-i {{ 'active' if ep.startswith('health_analytics') }}" href="{{ url_for('health_analytics.page') }}"><i class="bi bi-graph-up-arrow"></i><span data-i18n="nav.analytics">Health Analytics</span></a>
+<div class="sep"></div>
+<a class="nav-i" href="{{ url_for('appointments.doctors') }}"><i class="bi bi-person-badge"></i><span data-i18n="nav.doctors">Find Doctors</span></a>
+<a class="nav-i" href="{{ url_for('appointments.list_') }}"><i class="bi bi-calendar-check"></i><span data-i18n="nav.appts">Appointments</span></a>
+<a class="nav-i" href="{{ url_for('patient.medicines') }}"><i class="bi bi-capsule"></i><span data-i18n="nav.meds">Medicines</span></a>
+{% elif current_user.role == 'doctor' %}<a class="nav-i" href="{{ url_for('appointments.list_') }}"><i class="bi bi-calendar-check"></i><span data-i18n="nav.appts">Appointments</span></a>
+{% else %}<a class="nav-i" href="{{ url_for('prediction.models_page') }}"><i class="bi bi-cpu"></i>Model evaluation</a>{% endif %}
+<div class="sep"></div><a class="nav-i" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-left"></i><span data-i18n="nav.logout">Logout</span></a>
+<div class="small mt-3 opacity-75"><i class="bi bi-telephone"></i> <span data-i18n="m.emergency">Emergency? Call 112 (ambulance 108).</span></div></nav>
+<div class="main"><div class="topbar"><button class="btn btn-sm btn-outline-secondary menu-btn" id="menuBtn" aria-label="menu"><i class="bi bi-list"></i></button>
+<div class="grow fw-semibold">{% block heading %}{% endblock %}</div>
+<button class="btn btn-sm btn-outline-secondary" id="langBtn" onclick="App.toggleLang()" title="Language">हिं</button>
+<button class="btn btn-sm btn-outline-secondary" id="themeBtn" onclick="App.toggleTheme()" title="Dark mode"><i class="bi bi-moon-stars"></i></button></div>
+<div class="content">{% else %}<div class="topbar"><div class="grow fw-bold text-primary"><i class="bi bi-heart-pulse-fill"></i> SmartCare AI</div>
+<button class="btn btn-sm btn-outline-secondary" id="langBtn" onclick="App.toggleLang()">हिं</button><button class="btn btn-sm btn-outline-secondary" id="themeBtn" onclick="App.toggleTheme()"><i class="bi bi-moon-stars"></i></button></div><div class="pub">{% endif %}
+{% block body %}{% endblock %}
+</div>{% if current_user.is_authenticated %}</div></div>{% endif %}
+<div class="toast-wrap"></div><div id="loader"><div class="spin"></div></div>
+<div id="flash-data" data-messages='{{ get_flashed_messages(with_categories=true)|tojson|forceescape }}' hidden></div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/i18n.js') }}"></script><script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}</body></html>

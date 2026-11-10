@@ -1,0 +1,59 @@
+{% extends 'base.html' %}{% block heading %}<span data-i18n="t.dashboard">Unified AI Healthcare Dashboard</span>{% endblock %}
+{% block body %}
+<div class="d-flex flex-wrap align-items-center mb-3 gap-2"><h4 class="mb-0">Welcome, {{ current_user.name }}</h4><span class="muted small ms-auto" data-i18n="m.disclaimer">Educational tool. Not a medical diagnosis. Always consult a qualified doctor.</span></div>
+
+<!-- five module cards -->
+<div class="row g-3 mb-3">
+{% set cards = [
+ ('prediction.page','bi-activity','c.pred','Multi-Disease Prediction', preds|length ~ ' predictions', (latest.values()|map(attribute='risk_level')|select('equalto','High')|list|length) ~ ' high-risk result(s)'),
+ ('report_analyzer.index','bi-file-earmark-medical','c.rep','Medical Report Analyzer', n_reports ~ ' reports', abnormal ~ ' abnormal value(s) in latest'),
+ ('chatbot.page','bi-chat-heart','c.chat','AI Health Assistant', n_chats ~ ' conversations', 'Hindi + English, voice'),
+ ('diet_planner.page','bi-egg-fried','c.diet','Diet & Nutrition Planner', (plan.calories ~ ' kcal target') if plan else 'No plan yet', today.kcal ~ ' kcal logged today'),
+ ('health_analytics.page','bi-graph-up-arrow','c.ana','Predictive Health Analytics', n_readings ~ ' readings', anomalies ~ ' unusual reading(s)')] %}
+{% for ep, ic, key, label, l1, l2 in cards %}
+<div class="col-12 col-md-6 col-xl"><a href="{{ url_for(ep) }}" class="text-decoration-none"><div class="card hov p-3 h-100"><div class="d-flex gap-3 align-items-center"><div class="icon-tile"><i class="bi {{ ic }}"></i></div>
+<div><div class="fw-semibold" style="color:var(--ink)" data-i18n="{{ key }}">{{ label }}</div><div class="small muted">{{ l1 }}</div><div class="small muted">{{ l2 }}</div></div></div></div></a></div>
+{% endfor %}</div>
+
+<div class="row g-3">
+<div class="col-lg-4"><div class="card p-3 h-100"><h6 data-i18n="s.overview">Health Overview</h6>
+ <div class="row text-center g-2 mb-2"><div class="col-4"><div class="stat">{{ bmi or '--' }}</div><div class="small muted">BMI {{ '(' ~ bmi_cat ~ ')' if bmi_cat }}</div></div>
+ <div class="col-4"><div class="stat">{% if vitals.systolic %}{{ vitals.systolic|int }}/{{ (vitals.diastolic or 0)|int }}{% else %}--{% endif %}</div><div class="small muted">BP mmHg</div></div>
+ <div class="col-4"><div class="stat">{{ vitals.blood_sugar|int if vitals.blood_sugar else '--' }}</div><div class="small muted">Sugar mg/dL</div></div></div>
+ <form method="post" action="{{ url_for('patient.profile') }}" class="row g-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+ <div class="col-6"><label class="form-label" data-i18n="l.age">Age</label><input class="form-control form-control-sm" name="age" value="{{ p.age or '' }}"></div>
+ <div class="col-6"><label class="form-label" data-i18n="l.gender">Gender</label><select class="form-select form-select-sm" name="gender"><option>Male</option><option {{ 'selected' if p.gender=='Female' }}>Female</option></select></div>
+ <div class="col-6"><label class="form-label" data-i18n="l.height">Height (cm)</label><input class="form-control form-control-sm" name="height_cm" value="{{ p.height_cm or '' }}"></div>
+ <div class="col-6"><label class="form-label" data-i18n="l.weight">Weight (kg)</label><input class="form-control form-control-sm" name="weight_kg" value="{{ p.weight_kg or '' }}"></div>
+ <div class="col-12"><button class="btn btn-primary btn-sm" data-i18n="b.save">Save</button></div></form></div></div>
+
+<div class="col-lg-8"><div class="card p-3 h-100"><h6 data-i18n="s.predhist">AI Prediction History</h6>
+ {% if preds %}<div style="height:200px"><canvas id="predChart"></canvas></div>
+ <div class="d-flex flex-wrap gap-2 mt-2">{% for d, x in latest.items() %}<span class="small">{{ d|title }}: <span class="badge badge-{{ x.risk_level|lower }}">{{ x.risk_level }} {{ x.risk_percent }}%</span></span>{% endfor %}</div>
+ {% else %}<div class="muted small py-4 text-center">No predictions yet. <a href="{{ url_for('prediction.page') }}">Run your first risk assessment</a>.</div>{% endif %}</div></div>
+
+<div class="col-md-6 col-lg-4"><div class="card p-3 h-100"><h6 data-i18n="s.reports">Latest Medical Reports</h6>
+ {% for r in reports %}<div class="d-flex justify-content-between border-bottom py-1 small"><a href="{{ url_for('report_analyzer.detail', rid=r.id) }}">{{ r.title }}</a><span class="{{ 'status-High' if r.abnormal_count else 'muted' }}">{{ r.abnormal_count }} abnormal</span></div>
+ {% else %}<div class="muted small">None yet. <a href="{{ url_for('report_analyzer.index') }}">Upload a report</a>.</div>{% endfor %}</div></div>
+
+<div class="col-md-6 col-lg-4"><div class="card p-3 h-100"><h6 data-i18n="s.nutrition">Nutrition Summary</h6>
+ {% if plan %}{% set pct = ((today.kcal / plan.calories) * 100)|round|int %}<div class="small mb-1">Calories today: <b>{{ today.kcal }}</b> / {{ plan.calories }} kcal</div><div class="progress mb-2"><div class="progress-bar" style="width:{{ [pct,100]|min }}%"></div></div>
+ <div class="small">Protein {{ today.protein_g }} / {{ plan.protein_g }} g &middot; Carbs {{ today.carbs_g }} / {{ plan.carbs_g }} g &middot; Fat {{ today.fat_g }} / {{ plan.fat_g }} g</div>
+ <div class="small mt-1">Water: {{ today.water_ml }} / {{ plan.water_ml or 2000 }} ml</div>
+ {% else %}<div class="muted small">No active diet plan. <a href="{{ url_for('diet_planner.page') }}">Create one</a>.</div>{% endif %}</div></div>
+
+<div class="col-lg-4"><div class="card p-3 h-100"><h6 data-i18n="s.progress">Health Progress</h6>
+ {% if weights|length > 1 %}<div style="height:150px"><canvas id="wtChart"></canvas></div>{% else %}<div class="muted small py-3">Log your weight (Diet tracker or Analytics) to see progress.</div>{% endif %}</div></div>
+
+<div class="col-lg-8"><div class="card p-3 h-100"><h6 data-i18n="s.recs">Personalized Recommendations</h6>
+ {% for r in recs %}<div class="d-flex gap-2 py-1 border-bottom small"><span class="badge {{ 'bg-danger' if r.priority==1 else 'bg-warning text-dark' if r.priority==2 else 'bg-secondary' }}">{{ r.area }}</span><span>{{ r.text }}</span></div>{% endfor %}</div></div>
+
+<div class="col-lg-4"><div class="card p-3 h-100"><h6>Medicine Reminders</h6>{% for m in meds %}<div class="small">{{ m.name }} {{ m.dosage }} at {{ m.reminder_time }}</div>{% else %}<div class="muted small">None</div>{% endfor %}
+ <h6 class="mt-3">Recommended Doctors</h6>{% for d in doctors %}<div class="small">Dr. {{ d.user.name }} &mdash; {{ d.specialization }}</div>{% else %}<div class="muted small">None yet</div>{% endfor %}</div></div>
+<div class="col-12"><div class="card p-3"><h6>Feedback</h6><form method="post" action="{{ url_for('patient.feedback') }}" class="d-flex gap-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input class="form-control" name="message" maxlength="1000" required><button class="btn btn-outline-primary">Send</button></form></div></div>
+</div>{% endblock %}
+{% block scripts %}<script>
+const preds={{ preds|map(attribute='risk_percent')|list|tojson }}, pl={{ preds|map(attribute='created_at')|map('string')|map('truncate',10,True,'')|list|tojson }}, pd={{ preds|map(attribute='disease')|list|tojson }};
+if(preds.length){const ds=[...new Set(pd)];App.chart('predChart',{type:'line',data:{labels:pl.map((x,i)=>x),datasets:ds.map((d,i)=>({label:d,data:pd.map((k,j)=>k===d?preds[j]:null),borderColor:App.palette[i],spanGaps:true,tension:.3}))},options:{scales:{y:{min:0,max:100}}}})}
+const w={{ weights|tojson }};if(w.length>1)App.chart('wtChart',{type:'line',data:{labels:w.map(x=>x[0]),datasets:[{label:'kg',data:w.map(x=>x[1]),borderColor:'#2e7d32',fill:true,backgroundColor:'rgba(46,125,50,.1)',tension:.3}]},options:{plugins:{legend:{display:false}}}});
+</script>{% endblock %}

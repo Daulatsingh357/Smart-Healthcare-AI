@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% block body %}<div class="card p-4 mx-auto" style="max-width:460px"><h4 class="text-primary">Register</h4>
+<form method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input class="form-control mb-3" name="name" placeholder="Full name" required>
+<input class="form-control mb-3" name="email" type="email" placeholder="Email" required>
+<input class="form-control mb-3" name="password" type="password" minlength="8" placeholder="Password (8+ chars)" required>
+<select class="form-select mb-3" name="role" onchange="s.style.display=this.value=='doctor'?'block':'none'"><option value="patient">Patient</option><option value="doctor">Doctor</option></select>
+<input id="s" style="display:none" class="form-control mb-3" name="specialization" placeholder="Specialization (e.g. Cardiologist)">
+<button class="btn btn-primary w-100">Register</button></form></div>{% endblock %}

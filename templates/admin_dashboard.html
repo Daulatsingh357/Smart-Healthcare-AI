@@ -1,0 +1,12 @@
+{% extends 'base.html' %}{% block heading %}Admin Dashboard{% endblock %}{% block body %}
+<div class="row g-3 mb-3">{% for k,v in stats.items() %}<div class="col-6 col-md-3"><div class="card p-3"><div class="muted small">{{ k|replace('_',' ')|title }}</div><div class="stat">{{ v }}</div></div></div>{% endfor %}</div>
+<div class="row g-3">
+<div class="col-md-4"><div class="card p-3"><h6>Appointments by status</h6><div style="height:220px"><canvas id="c"></canvas></div></div></div>
+<div class="col-md-8"><div class="card p-3"><h6>ML models (hold-out test metrics) <a class="small ms-2" href="{{ url_for('prediction.models_page') }}">full evaluation &rarr;</a></h6>
+{% for kind, ms in metrics.items() %}<div class="mt-2"><b>{{ kind|title }}</b> <span class="small muted">deployed: {{ ms.best }} &middot; {{ ms.n_samples }} rows &middot; {{ 'SYNTHETIC data' if ms.data_source.startswith('SYNTHETIC') else 'real dataset' }}</span></div>
+<table class="table table-sm mb-1"><tr><th>Model</th><th>Acc</th><th>Precision</th><th>Recall</th><th>F1</th><th>AUC</th></tr>
+{% for n, r in ms.algorithms.items() %}<tr class="{{ 'table-primary' if n == ms.best }}"><td>{{ n }}</td><td>{{ r.accuracy }}</td><td>{{ r.precision }}</td><td>{{ r.recall }}</td><td>{{ r.f1 }}</td><td>{{ r.roc_auc }}</td></tr>{% endfor %}</table>
+{% else %}<small>No trained models. Run <code>python ml_models\train_all.py</code></small>{% endfor %}</div></div>
+<div class="col-md-6"><div class="card p-3"><h6>Users</h6><table class="table table-sm">{% for u in users %}<tr><td>{{ u.name }}</td><td>{{ u.role }}</td><td><form method="post" action="{{ url_for('admin.delete_user', uid=u.id) }}" data-confirm="Delete this user and ALL their health data?"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="btn btn-sm btn-outline-danger">Remove</button></form></td></tr>{% endfor %}</table></div></div>
+<div class="col-md-6"><div class="card p-3"><h6>Feedback</h6>{% for f in feedback %}<div class="border-bottom py-1"><b>{{ f.user.name if f.user }}</b>: {{ f.message }}</div>{% else %}<small>None</small>{% endfor %}</div></div></div>{% endblock %}
+{% block scripts %}<script>App.chart('c',{type:'doughnut',data:{labels:{{ by_status.keys()|list|tojson }},datasets:[{data:{{ by_status.values()|list|tojson }},backgroundColor:['#1565c0','#42a5f5','#90caf9','#ef5350']}]}})</script>{% endblock %}

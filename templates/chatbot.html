@@ -1,0 +1,39 @@
+{% extends 'base.html' %}{% block heading %}<span data-i18n="t.chat">AI Health Assistant</span>{% endblock %}
+{% block body %}
+<div class="disclaimer mb-3">General health information only. I cannot diagnose, prescribe medicines or suggest doses. <b>Emergency? Call 112 (ambulance 108).</b></div>
+<div class="row g-3"><div class="col-lg-3"><div class="card p-3 h-100"><button class="btn btn-primary btn-sm mb-2" id="newChat"><i class="bi bi-plus-lg"></i> New chat</button><div class="small fw-semibold mb-1">Chat history</div><div id="convs" style="max-height:420px;overflow:auto"></div></div></div>
+<div class="col-lg-9"><div class="card p-3">
+ <div class="d-flex flex-wrap gap-3 align-items-center mb-2"><div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" id="consent" {{ 'checked' if consent }}><label class="form-check-label small" for="consent" data-i18n="l.consent">Use my health history</label></div>
+ <div class="form-check form-switch mb-0"><input class="form-check-input" type="checkbox" id="speak"><label class="form-check-label small" for="speak" data-i18n="l.speak">Read aloud</label></div>
+ <div class="small muted ms-auto" id="privacy">Consent lets me use your saved BMI, vitals, reports and risk estimates. You can turn it off any time.</div></div>
+ <div class="chatbox" id="log"></div><div id="chips" class="mb-2"></div>
+ <div class="d-flex gap-2"><button class="btn btn-outline-secondary" id="mic" title="Voice input"><i class="bi bi-mic"></i></button><input id="m" class="form-control" maxlength="600" autocomplete="off" data-i18n-ph="ph.chat" placeholder="Ask about diet, sleep, symptoms, lab terms..."><button class="btn btn-primary" id="send"><i class="bi bi-send"></i> <span data-i18n="b.send">Send</span></button></div></div></div></div>
+{% endblock %}{% block scripts %}<script>
+let CID=null;const log=App.$('#log');
+function add(text,who,extra){const d=document.createElement('div');d.className='msg '+who+((extra&&extra.emergency)?' emergency':'');d.textContent=text;log.appendChild(d);
+ if(extra&&extra.doctors&&extra.doctors.length){const w=document.createElement('div');w.className='msg b';w.innerHTML='<b>Suggested doctors</b><br>'+extra.doctors.map(x=>`<a href="/doctors?q=${encodeURIComponent(x.specialization)}">Dr. ${App.esc(x.name)} &mdash; ${App.esc(x.specialization)}</a>`).join('<br>');log.appendChild(w)}
+ log.scrollTop=log.scrollHeight;return d}
+function chips(list){App.$('#chips').innerHTML=(list||[]).map(q=>`<span class="chip">${App.esc(q)}</span>`).join('');App.$$('#chips .chip').forEach(c=>c.onclick=()=>{m.value=c.textContent;send()})}
+function say(text,lang){if(!App.$('#speak').checked||!window.speechSynthesis)return;speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text.replace(/\n+/g,'. '));u.lang=lang==='hi'?'hi-IN':'en-IN';speechSynthesis.speak(u)}
+async function send(){const t=m.value.trim();if(!t)return;add(t,'u');m.value='';chips([]);
+ const ty=document.createElement('div');ty.className='msg b typing';ty.innerHTML='<span></span><span></span><span></span>';log.appendChild(ty);log.scrollTop=log.scrollHeight;
+ try{const r=await App.api('/api/chat',{method:'POST',quiet:true,body:{message:t,conversation_id:CID,language:App.lang()}});ty.remove();CID=r.conversation_id;
+  add(r.reply,'b',{emergency:r.emergency,doctors:r.doctors});chips(r.followups);say(r.reply,r.lang);loadConvs()}
+ catch(e){ty.remove();App.fail(e)}}
+App.$('#send').onclick=send;m.addEventListener('keydown',e=>{if(e.key==='Enter')send()});
+App.$('#newChat').onclick=()=>{CID=null;log.innerHTML='';greet()};
+async function greet(){const r=await App.api('/api/chat',{method:'POST',quiet:true,body:{message:App.lang()==='hi'?'नमस्ते':'hello',language:App.lang()}});
+ await App.api('/api/chat/conversations/'+r.conversation_id,{method:'DELETE',quiet:true});add(r.reply,'b');chips(r.followups)}
+async function loadConvs(){const c=await App.api('/api/chat/conversations',{quiet:true});
+ App.$('#convs').innerHTML=c.map(x=>`<div class="d-flex align-items-center small py-1 border-bottom"><a href="#" class="text-truncate flex-grow-1" data-id="${x.id}">${App.esc(x.title)}</a><a href="#" class="text-danger ms-1" data-del="${x.id}"><i class="bi bi-trash"></i></a></div>`).join('')||'<span class="muted small">No chats yet</span>';
+ App.$$('#convs [data-id]').forEach(a=>a.onclick=async e=>{e.preventDefault();CID=+a.dataset.id;const ms=await App.api('/api/chat/conversations/'+CID);log.innerHTML='';ms.forEach(x=>add(x.content,x.role==='user'?'u':'b',{emergency:x.emergency,doctors:(x.meta||{}).doctors}));
+  const last=[...ms].reverse().find(x=>x.role==='assistant');chips(last&&last.meta?last.meta.followups:[])});
+ App.$$('#convs [data-del]').forEach(a=>a.onclick=async e=>{e.preventDefault();if(!confirm('Delete this conversation?'))return;await App.api('/api/chat/conversations/'+a.dataset.del,{method:'DELETE'});if(CID==a.dataset.del){CID=null;log.innerHTML=''}loadConvs()})}
+App.$('#consent').onchange=async function(){try{await App.api('/api/chat/consent',{method:'POST',body:{consent:this.checked}});App.toast(this.checked?'Health history will be used in answers.':'Health history is no longer used.','success')}catch(e){this.checked=!this.checked;App.fail(e)}};
+/* voice input (browser Web Speech API; Chrome/Edge) */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition,mic=App.$('#mic');
+if(!SR){mic.disabled=true;mic.title='Voice input is not supported in this browser (use Chrome or Edge)'}else{let rec=null;mic.onclick=()=>{if(rec){rec.stop();return}rec=new SR();rec.lang=App.lang()==='hi'?'hi-IN':'en-IN';rec.interimResults=false;
+ rec.onresult=e=>{m.value=e.results[0][0].transcript;send()};rec.onend=()=>{rec=null;mic.classList.remove('btn-danger');mic.classList.add('btn-outline-secondary')};rec.onerror=e=>App.toast('Voice input error: '+e.error,'warning');
+ mic.classList.replace('btn-outline-secondary','btn-danger');rec.start()}}
+loadConvs();greet();
+</script>{% endblock %}

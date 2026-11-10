@@ -1,0 +1,43 @@
+{% extends 'base.html' %}{% block heading %}<span data-i18n="t.reports">Medical Report Analyzer</span>{% endblock %}
+{% block body %}
+<div class="disclaimer mb-3">Values, units and reference ranges are read <b>exactly as printed</b> in your report (PDF text or OCR). OCR can misread characters &mdash; always verify with the original. If a report prints no range for a test, it is shown as <b>Not assessed</b>; nothing is guessed. Explanations are general education, not a diagnosis.</div>
+<div class="row g-3 mb-3">
+ <div class="col-6 col-lg-3"><div class="card p-3"><div class="muted small" data-i18n="l.total">Total Reports</div><div class="stat" id="kTotal">-</div></div></div>
+ <div class="col-6 col-lg-3"><div class="card p-3"><div class="muted small" data-i18n="l.latest">Latest Report</div><div class="fw-semibold text-truncate" id="kLatest">-</div><div class="small muted" id="kLatestDate"></div></div></div>
+ <div class="col-6 col-lg-3"><div class="card p-3"><div class="muted small" data-i18n="l.abn">Abnormal Values</div><div class="stat" id="kAbn" style="color:var(--bad)">-</div><div class="small muted">in latest report</div></div></div>
+ <div class="col-6 col-lg-3"><div class="card p-3"><div class="muted small" data-i18n="l.na">Not assessed</div><div class="stat" id="kNA" style="color:var(--muted)">-</div><div class="small muted">no range printed</div></div></div></div>
+<div class="row g-3"><div class="col-lg-5"><div class="card p-3 mb-3"><h6><i class="bi bi-upload"></i> Upload report (PDF / JPG / PNG, max 8 MB)</h6>
+ <form id="up" class="row g-2"><div class="col-12"><input class="form-control" name="title" placeholder="Title (e.g. CBC March 2026)" maxlength="100"></div>
+ <div class="col-12"><label class="form-label">Report date <span class="muted">(optional; detected from text if blank)</span></label><input class="form-control" type="date" name="report_date"></div>
+ <div class="col-12"><input class="form-control" type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required></div>
+ <div class="col-12"><button class="btn btn-primary w-100" data-i18n="b.upload">Upload & Analyze</button></div></form>
+ <div class="small muted mt-2"><i class="bi bi-shield-lock"></i> Files are stored AES-encrypted on the server and linked to your account only.</div></div>
+ <div class="card p-3"><h6>Latest vs previous report</h6><div id="cmpLatest" class="small muted">Loading...</div></div></div>
+<div class="col-lg-7"><div class="card p-3 mb-3"><div class="d-flex gap-2 align-items-center"><h6 class="mb-0">Parameter comparison</h6><select id="param" class="form-select form-select-sm ms-auto" style="max-width:240px"></select></div>
+ <div style="height:240px"><canvas id="cmp"></canvas></div><div class="small muted" id="cmpNote">Select a test to compare across reports.</div></div>
+ <div class="card p-3"><h6>Report history</h6><div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Title</th><th>Date</th><th>Values</th><th>Abnormal</th><th></th></tr></thead><tbody id="hist"></tbody></table></div></div></div></div>
+{% endblock %}{% block scripts %}<script>
+async function load(){
+ const s=await App.api('/api/reports/summary',{quiet:true});
+ kTotal.textContent=s.total;kLatest.textContent=s.latest?s.latest.title:'-';kLatestDate.textContent=s.latest?App.fmtDate(s.latest.report_date):'';kAbn.textContent=s.abnormal_in_latest;kNA.textContent=s.not_assessed_in_latest;
+ const h=await App.api('/api/reports',{quiet:true});
+ hist.innerHTML=h.map(r=>`<tr><td><a href="/reports/${r.id}">${App.esc(r.title)}</a></td><td>${App.fmtDate(r.report_date)}</td><td>${r.value_count}</td><td class="${r.abnormal_count?'status-High':''}">${r.abnormal_count}</td>
+ <td class="text-nowrap"><a href="/reports/${r.id}" title="View"><i class="bi bi-eye"></i></a> <a href="/api/reports/${r.id}/pdf" title="PDF summary"><i class="bi bi-file-pdf"></i></a> <a href="#" class="text-danger" onclick="del(${r.id});return false"><i class="bi bi-trash"></i></a></td></tr>`).join('')||'<tr><td colspan=5 class="muted">No reports yet</td></tr>';
+ const ps=await App.api('/api/reports/parameters',{quiet:true});const keep=param.value;
+ param.innerHTML=ps.map(p=>`<option value="${p.key}">${App.esc(App.lang()==='hi'&&p.name_hi?p.name_hi:p.name)} (${p.count})</option>`).join('')||'<option value="">no data</option>';if(keep)param.value=keep;
+ compare();
+ const c=await App.api('/api/reports/compare/latest',{quiet:true});
+ cmpLatest.innerHTML=!c.available?App.esc(c.reason):`<div class="mb-1">${App.esc(c.previous.title)} &rarr; ${App.esc(c.latest.title)}</div><table class="table table-sm mb-0"><tbody>`+c.rows.map(r=>`<tr><td>${App.esc(r.name)}</td><td>${r.previous} &rarr; <b>${r.latest}</b> ${App.esc(r.unit||'')}</td><td>${r.change==null?'<span class="muted">unit differs</span>':(r.change>0?'<span class="text-danger">&#9650; +':r.change<0?'<span class="text-primary">&#9660; ':'<span>')+r.change+'</span>'}</td></tr>`).join('')+'</tbody></table>';
+}
+async function compare(){if(!param.value){App.chart('cmp',{type:'line',data:{labels:[],datasets:[]}});return}
+ const j=await App.api('/api/reports/compare?param='+param.value,{quiet:true});const p=j.points;
+ const ds=[{label:j.name+(p[0]&&p[0].unit?' ('+p[0].unit+')':''),data:p.map(x=>x.value),borderColor:'#1565c0',backgroundColor:'#1565c0',tension:.25,pointRadius:5}];
+ ds.push({label:'Report low',data:p.map(x=>x.ref_low),borderColor:'#2e7d32',borderDash:[5,4],pointRadius:0,spanGaps:true},{label:'Report high',data:p.map(x=>x.ref_high),borderColor:'#c62828',borderDash:[5,4],pointRadius:0,spanGaps:true});
+ App.chart('cmp',{type:'line',data:{labels:p.map(x=>App.fmtDate(x.date)),datasets:ds}});cmpNote.textContent=j.note}
+param.onchange=compare;
+up.addEventListener('submit',async e=>{e.preventDefault();const fd=new FormData(up);
+ try{const r=await App.api('/api/reports',{method:'POST',form:fd});App.toast(`Found ${r.value_count} value(s); ${r.abnormal_count} outside the printed range.`,r.value_count?'success':'warning');location.href='/reports/'+r.id}
+ catch(err){App.fail(err);if(err.data&&err.data.existing_id)setTimeout(()=>location.href='/reports/'+err.data.existing_id,1500)}});
+async function del(id){if(!confirm('Delete this report and its stored file?'))return;try{await App.api('/api/reports/'+id,{method:'DELETE'});load()}catch(e){App.fail(e)}}
+document.addEventListener('langchange',()=>load());load();
+</script>{% endblock %}

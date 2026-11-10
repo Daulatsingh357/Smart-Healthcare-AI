@@ -1,0 +1,47 @@
+{% extends 'base.html' %}{% block heading %}<span data-i18n="t.analytics">Predictive Health Analytics</span>{% endblock %}
+{% block body %}
+<div class="disclaimer mb-3">Trends, anomalies and forecasts are computed from <b>your own logged readings</b>. Forecasts appear only when a metric has at least 6 readings on different days spanning 14+ days, and are always shown as <b>estimates with a 95% range</b>. This is not a diagnosis or a prediction of illness.</div>
+<div id="alerts"></div>
+<div class="row g-3 mb-3"><div class="col-lg-4"><div class="card p-3 h-100"><h6><i class="bi bi-plus-circle"></i> Log a reading</h6><form id="lf" class="row g-2">
+{% for k, m in metrics.items() %}<div class="col-6"><label class="form-label">{{ m.label }} <span class="muted">({{ m.unit }})</span></label><input class="form-control form-control-sm" type="number" step="any" name="{{ k }}" min="{{ m.lo }}" max="{{ m.hi }}"><div class="text-danger small" id="e_{{ k }}"></div></div>{% endfor %}
+<div class="col-12"><label class="form-label">Date &amp; time <span class="muted">(blank = now)</span></label><input class="form-control form-control-sm" type="datetime-local" name="recorded_at"><div class="text-danger small" id="e_recorded_at"></div></div>
+<div class="col-12"><button class="btn btn-primary btn-sm w-100" data-i18n="b.log">Log</button></div></form></div></div>
+<div class="col-lg-8"><div class="row g-3 h-100"><div class="col-6 col-md-3"><div class="card p-3 h-100"><div class="muted small">Readings</div><div class="stat" id="kRead">-</div></div></div>
+<div class="col-6 col-md-3"><div class="card p-3 h-100"><div class="muted small">Unusual readings</div><div class="stat" id="kAn">-</div></div></div>
+<div class="col-12 col-md-6"><div class="card p-3 h-100"><div class="muted small">Requirements for forecasts</div><div class="small" id="req"></div><div class="d-flex gap-2 mt-2 flex-wrap"><button class="btn btn-outline-primary btn-sm" id="run" data-i18n="b.run">Run & save analysis</button></div></div></div>
+<div class="col-12"><div class="card p-3"><h6>Personalized preventive suggestions</h6><div id="recs"></div></div></div></div></div></div>
+<div class="row g-3" id="charts"></div>
+<div class="row g-3 mt-1"><div class="col-lg-6"><div class="card p-3 h-100"><h6>Anomaly detection</h6><div class="small muted mb-2" id="anInfo"></div><div class="table-responsive"><table class="table table-sm"><tbody id="anBody"></tbody></table></div></div></div>
+<div class="col-lg-6"><div class="card p-3 h-100"><h6>Health risk trend monitoring</h6><div id="riskBox" class="small muted">Run risk predictions on at least 3 occasions to see a trend.</div></div></div></div>
+<div class="card p-3 mt-3"><div class="d-flex flex-wrap gap-2 align-items-center"><h6 class="mb-0">Monthly health summary</h6><input type="month" id="month" class="form-control form-control-sm" style="width:170px"><a class="btn btn-outline-primary btn-sm ms-auto" id="pdf"><i class="bi bi-file-pdf"></i> Analytics report (PDF)</a></div><div id="monthly" class="small mt-2"></div><div class="small muted mt-2" id="saved"></div></div>
+{% endblock %}{% block scripts %}<script>
+const $=id=>document.getElementById(id),KEYS={{ metrics|tojson }};
+$('month').value=new Date().toISOString().slice(0,7);
+$('lf').addEventListener('submit',async e=>{e.preventDefault();document.querySelectorAll('[id^=e_]').forEach(x=>x.textContent='');const body={};new FormData($('lf')).forEach((v,k)=>{if(v!=='')body[k]=v});
+ try{const r=await App.api('/api/metrics',{method:'POST',body});App.toast('Reading saved','success');r.alerts.forEach(a=>App.toast(a.text,a.level==='urgent'?'danger':'warning'));$('lf').reset();load()}
+ catch(err){if(err.data&&err.data.fields)Object.entries(err.data.fields).forEach(([k,v])=>{const el=$('e_'+k);if(el)el.textContent=v});App.fail(err)}});
+async function load(){const o=await App.api('/api/analytics/overview');
+ $('kRead').textContent=o.readings;$('kAn').textContent=o.anomalies.anomalies.length;$('req').textContent=`Forecast: ${o.requirements.min_points}+ readings over ${o.requirements.min_span_days}+ days. Anomaly model: ${o.requirements.min_anomaly_rows}+ multi-metric readings.`;
+ $('alerts').innerHTML=o.alerts.map(a=>`<div class="alert alert-${a.level==='urgent'?'danger':'warning'} py-2 small"><b>${App.esc(a.metric)}:</b> ${App.esc(a.text)}</div>`).join('');
+ $('recs').innerHTML=o.recommendations.map(r=>`<div class="d-flex gap-2 py-1 border-bottom small"><span class="badge ${r.priority==1?'bg-danger':r.priority==2?'bg-warning text-dark':'bg-secondary'}">${App.esc(r.area)}</span><span>${App.esc(r.text)}</span></div>`).join('');
+ const box=$('charts');box.innerHTML='';const ks=Object.keys(o.series);
+ if(!ks.length)box.innerHTML='<div class="col-12"><div class="card p-4 text-center muted">No readings yet. Log your first reading on the left.</div></div>';
+ ks.forEach((k,i)=>{const s=o.series[k],t=o.trends[k],f=o.forecasts[k];
+  box.insertAdjacentHTML('beforeend',`<div class="col-lg-6"><div class="card p-3"><div class="d-flex"><h6>${App.esc(s.label)} <span class="muted">(${s.unit})</span></h6><span class="ms-auto small">${t.available?`<b>${t.direction}</b> ${t.slope_per_week>0?'+':''}${t.slope_per_week}/week (R&sup2; ${t.r2})`:''}</span></div>
+  <div style="height:230px"><canvas id="c_${k}"></canvas></div><div class="small muted mt-1">${f.reliable?`<b>Estimate</b> (${App.esc(f.model)}): 7-day outlook with 95% range. ${App.esc(f.label)}`:'No forecast: '+App.esc(f.reason)}</div></div></div>`);
+  const labels=s.dates.map(d=>d.slice(0,10)),fl=f.reliable?f.points.map(p=>p.date):[],all=[...labels,...fl],pad=(a,front)=>front?[...a,...fl.map(()=>null)]:[...labels.map(()=>null),...a];
+  const ds=[{label:'Readings',data:pad(s.values,true),borderColor:'#1565c0',backgroundColor:'#1565c0',pointRadius:3,tension:0},{label:'3-point moving average',data:pad(s.rolling,true),borderColor:'#90a4ae',pointRadius:0,borderDash:[2,3]}];
+  if(f.reliable){const lastV=s.values[s.values.length-1];const link=(a)=>[...labels.slice(0,-1).map(()=>null),lastV,...a];
+   ds.push({label:'Estimate',data:link(f.points.map(p=>p.estimate)),borderColor:'#ef6c00',borderDash:[6,4],pointRadius:2},{label:'95% low',data:link(f.points.map(p=>p.low)),borderColor:'rgba(239,108,0,.35)',pointRadius:0,fill:false},{label:'95% high',data:link(f.points.map(p=>p.high)),borderColor:'rgba(239,108,0,.35)',pointRadius:0,fill:'-1',backgroundColor:'rgba(239,108,0,.12)'})}
+  App.chart('c_'+k,{type:'line',data:{labels:all,datasets:ds},options:{spanGaps:false,plugins:{legend:{labels:{boxWidth:12}}}}})});
+ const an=o.anomalies;$('anInfo').textContent=an.method+(an.reason?' - '+an.reason:'')+(an.note?' '+an.note:'');
+ $('anBody').innerHTML=an.anomalies.map(a=>`<tr><td>${App.fmtDate(a.recorded_at)}</td><td>${App.esc(a.label)} <b>${a.value}</b></td><td class="muted">usual ${a.typical}</td></tr>`).join('')||'<tr><td class="muted">No unusual readings flagged.</td></tr>';
+ const rk=Object.entries(o.risk_trends);$('riskBox').innerHTML=rk.map(([d,r])=>`<div class="mb-2"><b class="text-capitalize">${d}</b>: ${r.available?`${r.direction}, latest ${r.latest}% (${r.n} assessments)${r.estimate_in_14_days?`<br><b>Estimate</b> in 14 days: ${r.estimate_in_14_days.estimate.toFixed(0)}% (range ${r.estimate_in_14_days.low.toFixed(0)}-${r.estimate_in_14_days.high.toFixed(0)}%)`:`<br><span class="muted">${App.esc(r.reason||'')}</span>`}`:App.esc(r.reason)}</div>`).join('')||'Run risk predictions on at least 3 occasions to see a trend.'}
+async function monthly(){const m=$('month').value;if(!m)return;$('pdf').href='/api/analytics/report.pdf?month='+m;const r=await App.api('/api/analytics/monthly?month='+m,{quiet:true});
+ const rows=Object.entries(r.metrics).filter(([k,v])=>v.n).map(([k,v])=>`<tr><td>${KEYS[k].label}</td><td>${v.n}</td><td>${v.mean}</td><td>${v.min}-${v.max}</td><td>${v.change==null?'-':(v.change>0?'+':'')+v.change}</td></tr>`).join('');
+ $('monthly').innerHTML=`<div>${r.readings} reading(s) &middot; ${r.predictions.length} prediction(s) &middot; ${r.reports.count} report(s) (${r.reports.abnormal_values} abnormal value(s)) &middot; nutrition logged on ${r.nutrition.days_logged} day(s)${r.nutrition.avg_kcal?', avg '+r.nutrition.avg_kcal+' kcal':''}</div>`+(rows?`<table class="table table-sm mt-2"><thead><tr><th>Metric</th><th>n</th><th>Mean</th><th>Range</th><th>vs last month</th></tr></thead><tbody>${rows}</tbody></table>`:'<div class="muted mt-1">No readings in this month.</div>')}
+$('month').onchange=monthly;
+async function saved(){const h=await App.api('/api/analytics/history',{quiet:true});$('saved').textContent=h.length?'Saved analyses: '+h.map(x=>x.type+' '+App.fmtDate(x.created_at)).slice(0,4).join(' | '):'No saved analyses yet.'}
+$('run').onclick=async()=>{try{await App.api('/api/analytics/run',{method:'POST'});App.toast('Analysis saved to your health records','success');saved()}catch(e){App.fail(e)}};
+load();monthly();saved();
+</script>{% endblock %}

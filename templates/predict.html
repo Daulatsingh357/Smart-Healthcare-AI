@@ -1,0 +1,46 @@
+{% extends 'base.html' %}{% block heading %}<span data-i18n="t.predict">Multi-Disease Risk Prediction</span>{% endblock %}
+{% block body %}
+<div class="disclaimer mb-3"><b>Experimental screening estimate &mdash; not a diagnosis.</b> Results cannot confirm or rule out any disease. Low/Moderate/High bands (30%/60%) are illustrative, not clinically validated. Models use
+{% if trained %}the data source shown with each result (synthetic unless you supplied real datasets){% else %}<b>no trained models yet &mdash; run <code>python ml_models\train_all.py</code></b>{% endif %}.</div>
+<div class="row g-3"><div class="col-lg-6"><div class="card p-3">
+ <ul class="nav nav-pills mb-3" id="tabs">{% for s in specs %}<li class="nav-item"><button class="nav-link {{ 'active' if loop.first }}" data-d="{{ s.key }}">{{ s.title }}</button></li>{% endfor %}</ul>
+ <form id="pf" novalidate><div class="row g-2" id="fields"></div>
+ <div class="row g-2 mt-1"><div class="col-8"><label class="form-label">Algorithm</label><select id="algo" class="form-select form-select-sm"><option value="">Best model (automatic)</option><option>Logistic Regression</option><option>Random Forest</option><option>Decision Tree</option><option>SVM</option><option>XGBoost</option></select></div>
+ <div class="col-4 d-flex align-items-end"><button class="btn btn-primary w-100" data-i18n="b.analyze">Analyze</button></div></div></form></div></div>
+<div class="col-lg-6"><div id="result"></div>
+ <div class="card p-3"><div class="d-flex"><h6 data-i18n="l.history">History</h6><a class="ms-auto small" href="{{ url_for('prediction.models_page') }}">Model evaluation &rarr;</a></div>
+ <div style="height:170px"><canvas id="hist"></canvas></div>
+ <div class="table-responsive" style="max-height:230px;overflow:auto"><table class="table table-sm mb-0"><tbody id="hbody"></tbody></table></div></div></div></div>
+{% endblock %}
+{% block scripts %}<script>
+const SPECS={{ specs|tojson }}, PROFILE={{ profile|tojson }}; let cur=SPECS[0].key;
+const spec=()=>SPECS.find(s=>s.key===cur);
+function build(){const s=spec(),box=App.$('#fields');box.innerHTML='';
+ const fld=(f,extra='')=>{const id='f_'+f.name;let inp;
+  if(f.type==='select')inp=`<select class="form-select form-select-sm" id="${id}" name="${f.name}">${f.choices.map(c=>`<option value="${c[0]}">${App.esc(c[1])}</option>`).join('')}</select>`;
+  else inp=`<input class="form-control form-control-sm" id="${id}" name="${f.name}" type="number" step="${f.step}" min="${f.min}" max="${f.max}" ${extra}>`;
+  return `<div class="col-6"><label class="form-label" for="${id}">${App.esc(f.label)} ${f.unit?'<span class="muted">('+App.esc(f.unit)+')</span>':''}</label>${inp}<div class="text-danger small" id="e_${f.name}"></div></div>`};
+ let h=s.context.map(f=>fld(f)).join('')+s.features.map(f=>fld(f,f.name==='bmi'?'':'')).join('');box.innerHTML=h;
+ const set=(n,v)=>{const e=App.$('#f_'+n);if(e&&v!=null&&v!=='')e.value=v};
+ set('age',PROFILE.age);set('sex',PROFILE.sex);set('height_cm',PROFILE.height_cm);set('weight_kg',PROFILE.weight_kg);set('bmi',PROFILE.bmi);
+ ['height_cm','weight_kg'].forEach(n=>App.$('#f_'+n).addEventListener('input',()=>{const h=+App.$('#f_height_cm').value,w=+App.$('#f_weight_kg').value,b=App.$('#f_bmi');if(b&&h>0&&w>0)b.value=(w/((h/100)**2)).toFixed(1)}))}
+App.$$('#tabs button').forEach(b=>b.onclick=()=>{App.$$('#tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');cur=b.dataset.d;build();App.$('#result').innerHTML=''});
+App.$('#pf').addEventListener('submit',async e=>{e.preventDefault();App.$$('[id^=e_]').forEach(x=>x.textContent='');
+ const inputs={};App.$$('#fields [name]').forEach(el=>{if(el.value!=='')inputs[el.name]=el.value});
+ try{const r=await App.api('/api/predictions',{method:'POST',body:{disease:cur,inputs,algorithm:App.$('#algo').value||undefined}});show(r);App.toast('Assessment saved','success');load()}
+ catch(err){if(err.data&&err.data.fields){Object.entries(err.data.fields).forEach(([k,v])=>{const el=App.$('#e_'+k);if(el)el.textContent=v})}App.fail(err)}});
+function show(r){const col={Low:'#2e7d32',Moderate:'#ef6c00',High:'#c62828'}[r.level];
+ App.$('#result').innerHTML=`<div class="card p-3 mb-3"><h5>${App.esc(spec().title)}: ${App.badge(r.level)}</h5><div class="risk-ring"><canvas id="ring"></canvas><div class="num" style="color:${col}">${r.risk}%</div></div>
+ <div class="text-center small muted mb-2">Model: ${App.esc(r.model)} (calibrated) &middot; v${App.esc(r.version)}</div>
+ ${r.is_synthetic?'<div class="disclaimer mb-2"><b>Trained on SYNTHETIC data.</b> This percentage has no proven clinical meaning; it demonstrates the pipeline.</div>':''}
+ <div class="small fw-semibold">Main contributing factors</div><ul class="small">${r.factors.map(f=>`<li>${App.esc(f.label)} = ${f.value} <b>${f.direction}</b> the estimate by ~${Math.abs(f.effect_points)} points vs a typical value</li>`).join('')}</ul>
+ <div class="small fw-semibold">Suggestions</div><ul class="small">${r.tips.map(t=>`<li>${App.esc(t)}</li>`).join('')}</ul>
+ <div class="small muted">${App.esc(r.disclaimer)}</div><a class="btn btn-outline-primary btn-sm mt-2" href="${r.pdf_url}"><i class="bi bi-file-pdf"></i> <span data-i18n="b.pdf">Download PDF</span></a></div>`;
+ App.applyLang();App.chart('ring',{type:'doughnut',data:{datasets:[{data:[r.risk,100-r.risk],backgroundColor:[col,'rgba(120,150,190,.2)'],borderWidth:0}]},options:{cutout:'78%',plugins:{legend:{display:false},tooltip:{enabled:false}}}})}
+async function load(){const h=await App.api('/api/predictions?limit=100',{quiet:true});
+ App.$('#hbody').innerHTML=h.map(x=>`<tr><td>${App.fmtDate(x.created_at)}</td><td>${App.esc(x.disease)}</td><td>${x.risk}%</td><td>${App.badge(x.level)}</td><td><a href="/api/predictions/${x.id}/pdf" title="PDF"><i class="bi bi-file-pdf"></i></a> <a href="#" onclick="del(${x.id});return false" class="text-danger"><i class="bi bi-trash"></i></a></td></tr>`).join('')||'<tr><td class="muted">No predictions yet</td></tr>';
+ const ds=[...new Set(h.map(x=>x.disease))],rev=[...h].reverse();
+ App.chart('hist',{type:'line',data:{labels:rev.map(x=>App.fmtDate(x.created_at)),datasets:ds.map((d,i)=>({label:d,data:rev.map(x=>x.disease===d?x.risk:null),borderColor:App.palette[i],spanGaps:true,tension:.3}))},options:{scales:{y:{min:0,max:100}}}})}
+async function del(id){if(!confirm('Delete this prediction?'))return;try{await App.api('/api/predictions/'+id,{method:'DELETE'});load()}catch(e){App.fail(e)}}
+build();load();
+</script>{% endblock %}
